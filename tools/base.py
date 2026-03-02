@@ -40,26 +40,26 @@ class Tool(ABC):
     def __repr__(self)->str:
         return self.__str__()
 
-# A minimal concrete tool for testing:
-class Calculate(Tool):
-    def __init__(self):
-        super().__init__(name="calculate",description="calculate two numbers")
+# # A minimal concrete tool for testing:
+# class Calculate(Tool):
+#     def __init__(self):
+#         super().__init__(name="calculate",description="calculate two numbers")
 
-    def run(self,parameters:Dict[str,Any])->str:
-        a=parameters["a"]
-        b=parameters['b']
-        return str(a+b)
+#     def run(self,parameters:Dict[str,Any])->str:
+#         a=parameters["a"]
+#         b=parameters['b']
+#         return str(a+b)
 
-    def get_parameters(self):
-        return [
-            ToolParameter(name="a",type="integer",description="first number"),
-            ToolParameter(name="b",type="integer",description='Seconde integer')
-        ]
+#     def get_parameters(self):
+#         return [
+#             ToolParameter(name="a",type="integer",description="first number"),
+#             ToolParameter(name="b",type="integer",description='Seconde integer')
+#         ]
 
-cal=Calculate()
-assert cal.run({"a":3,"b":4})=='7'
-assert cal.validate_parameters({"a":3,"b":4})==True
-assert cal.validate_parameters({"a":3})==False
-assert cal.validate_parameters({})==False
-assert cal.to_dict()["name"]=="calculate"
-print("tool base ok")
+# cal=Calculate()
+# assert cal.run({"a":3,"b":4})=='7'
+# assert cal.validate_parameters({"a":3,"b":4})==True
+# assert cal.validate_parameters({"a":3})==False
+# assert cal.validate_parameters({})==False
+# assert cal.to_dict()["name"]=="calculate"
+# print("tool base ok")
