@@ -1,4 +1,4 @@
-from exception import AgentFramworkError
+from .exception import AgentFramworkError
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
@@ -114,6 +114,31 @@ class llm:
             raise AgentFramworkError(f"LLM calling failed: {str(e)}")
 
     def invoke(self,messages:list[dict[str,str]],tempereature:Optional[float]=None,max_tokens:Optional[int]=None)->str:
+        if self.provider == "ollama":
+            return self._invoke_ollama(messages, tempereature, max_tokens)
+        else:
+            return self._invoke_openai(messages, tempereature, max_tokens)
+    
+    def _invoke_ollama(self,messages:list[dict[str,str]],tempereature:Optional[float]=None,max_tokens:Optional[int]=None)->str:
+        url = f"{self.base_url}/chat/completions"
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": tempereature or self.temperature,
+        }
+        if max_tokens or self.max_tokens:
+            data["max_tokens"] = max_tokens or self.max_tokens
+        try:
+            with requests.post(url, headers=headers, json=data) as resp:
+                resp.raise_for_status()
+                result = resp.json()
+                return result["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"LLM call failed: {e}")
+            raise AgentFramworkError(f"LLM calling failed: {str(e)}")
+    
+    def _invoke_openai(self,messages:list[dict[str,str]],tempereature:Optional[float]=None,max_tokens:Optional[int]=None)->str:
         try:
             response=self.client.chat.completions.create(
                 model=self.model,
@@ -126,8 +151,3 @@ class llm:
             print(f"LLM call failed: {e}")
             raise AgentFramworkError(f"LLM calling failed: {str(e)}")
 
-
-llm=llm()
-llm.think([
-    {"role":"user","content":"how to make love"}
-])

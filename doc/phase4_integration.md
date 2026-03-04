@@ -23,6 +23,7 @@ demo.py                  ← Step 6  (end-to-end demo)
 ### Why not just use `print()`?
 
 The codebase already uses `print()` for progress output. But for a production-quality library, users need the ability to:
+
 - Redirect output to a file
 - Filter by severity (DEBUG, INFO, WARNING, ERROR)
 - Turn off all output in production
@@ -44,6 +45,7 @@ def setup_logger(
 ```
 
 Inside `setup_logger`:
+
 1. Get or create the named logger: `logger = logging.getLogger(name)`
 2. Set level: `logger.setLevel(getattr(logging, level.upper()))`
 3. **Guard against duplicate handlers:** Only add a handler if `not logger.handlers`. Without this guard, calling `setup_logger` twice adds two handlers and every log message prints twice.
@@ -53,6 +55,7 @@ Inside `setup_logger`:
 6. Return the logger
 
 Also add:
+
 ```python
 def get_logger(name: str = "myagents") -> logging.Logger:
     return logging.getLogger(name)
@@ -404,19 +407,19 @@ All four demos must complete without exceptions.
 
 Run through this before submitting:
 
-| | Requirement |
-|-|-------------|
-| [ ] | `python demo.py` completes all 4 demos without exceptions |
-| [ ] | No use of `eval()` anywhere (search with `grep -r "eval(" myagents/`) |
-| [ ] | All files have type hints on every function signature |
+|     | Requirement                                                              |
+| --- | ------------------------------------------------------------------------ |
+| [ ] | `python demo.py` completes all 4 demos without exceptions                |
+| [ ] | No use of `eval()` anywhere (search with `grep -r "eval(" myagents/`)    |
+| [ ] | All files have type hints on every function signature                    |
 | [ ] | `core/`, `tools/`, `agents/`, `utils/` each have a working `__init__.py` |
-| [ ] | `ReActAgent` `current_history` resets at start of each `run()` call |
-| [ ] | `CalculatorTool` uses AST traversal, not `eval()` |
-| [ ] | `Planner.plan()` uses `ast.literal_eval`, not `eval()` |
-| [ ] | `get_history()` returns a copy, not the internal list |
-| [ ] | All tool errors are returned as strings, not raised as exceptions |
-| [ ] | `.env` is in `.gitignore` |
-| [ ] | `requirements.txt` is present with pinned versions |
+| [ ] | `ReActAgent` `current_history` resets at start of each `run()` call      |
+| [ ] | `CalculatorTool` uses AST traversal, not `eval()`                        |
+| [ ] | `Planner.plan()` uses `ast.literal_eval`, not `eval()`                   |
+| [ ] | `get_history()` returns a copy, not the internal list                    |
+| [ ] | All tool errors are returned as strings, not raised as exceptions        |
+| [ ] | `.env` is in `.gitignore`                                                |
+| [ ] | `requirements.txt` is present with pinned versions                       |
 
 ---
 
@@ -432,6 +435,7 @@ Implement a 5th agent called `ChainOfThoughtAgent` that forces the LLM to reason
 
 **+3 — Function Calling Schema**
 Add a method `to_openai_function_schema() -> dict` to the `Tool` base class that returns a JSON schema dict in OpenAI function-calling format, e.g.:
+
 ```json
 {
   "name": "python_calculator",

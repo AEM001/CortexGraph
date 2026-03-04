@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any
-from message import Message
-from llm import llm
-from config import Config
+from .message import Message
+from .llm import llm
+from .config import Config
 
 class Agent(ABC):
     def __init__(self,name:str,llm:llm,system_prompt:Optional[str]=None,config:Optional[Config]=None):

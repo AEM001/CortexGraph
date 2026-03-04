@@ -1,6 +1,6 @@
 from typing import Optional, Any, Callable
-from core.exceptions import HelloAgentsException
-from base import Tool
+from ..core.exception import AgentFramworkError
+from .base import Tool
 
 class ToolRegistry:
     def __init__(self):
