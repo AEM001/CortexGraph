@@ -45,13 +45,13 @@ Use Pydantic `BaseModel` for this. This schema will later be used to generate do
 
 **`Tool`** — the abstract base all tools inherit from:
 
-| Method | Abstract? | What it does |
-| ------ | --------- | ------------ |
-| `__init__(name, description)` | No | Stores name and description |
-| `run(parameters: dict) -> str` | **Yes** | Execute the tool, always returns a string |
-| `get_parameters() -> List[ToolParameter]` | **Yes** | Declare what inputs this tool expects |
-| `validate_parameters(parameters: dict) -> bool` | No | Check all required params are present |
-| `to_dict() -> dict` | No | Serialize the tool to a dict (for docs/function-calling) |
+| Method                                          | Abstract? | What it does                                             |
+| ----------------------------------------------- | --------- | -------------------------------------------------------- |
+| `__init__(name, description)`                   | No        | Stores name and description                              |
+| `run(parameters: dict) -> str`                  | **Yes**   | Execute the tool, always returns a string                |
+| `get_parameters() -> List[ToolParameter]`       | **Yes**   | Declare what inputs this tool expects                    |
+| `validate_parameters(parameters: dict) -> bool` | No        | Check all required params are present                    |
+| `to_dict() -> dict`                             | No        | Serialize the tool to a dict (for docs/function-calling) |
 
 ### Exact requirements for `run()`
 
@@ -118,11 +118,13 @@ The registry is the **central directory** of all tools available to agents. It s
 You must support both:
 
 **Style 1 — Register a `Tool` object (recommended, full-featured):**
+
 ```python
 registry.register_tool(CalculatorTool())
 ```
 
 **Style 2 — Register a plain function (quick, for simple cases):**
+
 ```python
 registry.register_function("greet", "Says hello", lambda name: f"Hello, {name}!")
 ```
@@ -130,6 +132,7 @@ registry.register_function("greet", "Says hello", lambda name: f"Hello, {name}!"
 ### Internal storage
 
 Use two separate dicts:
+
 ```python
 self._tools: dict[str, Tool] = {}
 self._functions: dict[str, dict] = {}
@@ -139,14 +142,17 @@ self._functions: dict[str, dict] = {}
 ### Methods to implement
 
 **`register_tool(tool: Tool) -> None`**
+
 - Warn (print) if the name already exists — then overwrite.
 - Store in `self._tools`.
 
 **`register_function(name: str, description: str, func: Callable[[str], str]) -> None`**
+
 - Same overwrite warning behavior.
 - Store in `self._functions`.
 
 **`execute_tool(name: str, input_text: str) -> str`**
+
 - Look in `self._tools` first, then `self._functions`.
 - For `Tool` objects: call `tool.run({"input": input_text})`.
 - For functions: call `func(input_text)`.
@@ -154,6 +160,7 @@ self._functions: dict[str, dict] = {}
 - If no tool found: return `f"Error: tool '{name}' not found"`.
 
 **`get_tools_description() -> str`**
+
 - This is injected into agent prompts so the LLM knows what tools exist.
 - Format each tool as: `- tool_name: description`
 - Return all tools (both `_tools` and `_functions`) joined by newlines.
@@ -212,6 +219,7 @@ Example: a "research" chain might run `search[{input}]` then pass the result to 
 ### What to build: `ToolChain`
 
 **Constructor:**
+
 ```python
 def __init__(self, name: str, description: str):
     self.name = name
@@ -222,6 +230,7 @@ def __init__(self, name: str, description: str):
 **`add_step(tool_name, input_template, output_key=None)`**
 
 Appends a step dict to `self.steps`:
+
 ```python
 {
     "tool_name": tool_name,
@@ -316,6 +325,7 @@ Run a single tool asynchronously using `run_in_executor`. Catch all exceptions a
 - Create a coroutine for each task using `execute_tool_async`.
 - Await them and collect results.
 - Return a list of result dicts:
+  
   ```python
   {"task_id": i, "tool_name": ..., "input_data": ..., "result": ..., "status": "success"|"error"}
   ```
@@ -390,15 +400,15 @@ tree = ast.parse(expr, mode='eval')
 
 You write a recursive `_eval_node(node)` that handles exactly these node types:
 
-| AST Node Type | What it represents | What you return |
-| ------------- | ------------------ | --------------- |
-| `ast.Constant` | A number literal like `3` or `2.5` | `node.value` |
-| `ast.Num` | Same, for Python < 3.8 compatibility | `node.n` |
-| `ast.BinOp` | Binary operation: `left op right` | `OPERATORS[type(node.op)](eval(left), eval(right))` |
-| `ast.UnaryOp` | Unary op: e.g. `-x` | `OPERATORS[type(node.op)](eval(operand))` |
-| `ast.Call` | Function call: `sqrt(x)` | Look up name in `FUNCTIONS` whitelist, evaluate args, call |
-| `ast.Name` | A bare name like `pi` or `e` | Look up in `FUNCTIONS` dict (for math constants) |
-| Anything else | Unknown/unsafe | `raise ValueError(f"Unsupported: {type(node)}")` |
+| AST Node Type  | What it represents                   | What you return                                            |
+| -------------- | ------------------------------------ | ---------------------------------------------------------- |
+| `ast.Constant` | A number literal like `3` or `2.5`   | `node.value`                                               |
+| `ast.Num`      | Same, for Python < 3.8 compatibility | `node.n`                                                   |
+| `ast.BinOp`    | Binary operation: `left op right`    | `OPERATORS[type(node.op)](eval(left), eval(right))`        |
+| `ast.UnaryOp`  | Unary op: e.g. `-x`                  | `OPERATORS[type(node.op)](eval(operand))`                  |
+| `ast.Call`     | Function call: `sqrt(x)`             | Look up name in `FUNCTIONS` whitelist, evaluate args, call |
+| `ast.Name`     | A bare name like `pi` or `e`         | Look up in `FUNCTIONS` dict (for math constants)           |
+| Anything else  | Unknown/unsafe                       | `raise ValueError(f"Unsupported: {type(node)}")`           |
 
 ### Whitelists to define
 
@@ -423,6 +433,7 @@ FUNCTIONS = {
 ### What to build: `CalculatorTool`
 
 A `Tool` subclass with:
+
 - `name = "python_calculator"`
 - `description` explaining it evaluates math expressions
 - `run(parameters)` that:
@@ -479,10 +490,12 @@ A tool that searches the web. Supports two backends (Tavily AI search and SerpAp
 You must determine whether each backend is available when the tool is first created — not when it's first used. This gives early, clear error messages at startup rather than mysterious failures mid-run.
 
 Availability requires TWO things to be true:
+
 1. The API key is configured (env var or constructor arg)
 2. The Python library is installed
 
 Check both like this:
+
 ```python
 if self.tavily_key:
     try:
@@ -496,6 +509,7 @@ if self.tavily_key:
 ### What to build: `SearchTool`
 
 **Constructor:**
+
 ```python
 def __init__(self, backend: str = "hybrid", tavily_key=None, serpapi_key=None):
     super().__init__(name="search", description="Web search tool...")
@@ -507,6 +521,7 @@ def __init__(self, backend: str = "hybrid", tavily_key=None, serpapi_key=None):
 ```
 
 **`run(parameters)` dispatch logic:**
+
 ```
 if backend == "hybrid":  → _search_hybrid(query)
 if backend == "tavily":  → _search_tavily(query)
@@ -514,11 +529,13 @@ if backend == "serpapi": → _search_serpapi(query)
 ```
 
 **`_search_hybrid(query)`:**
+
 - If tavily is available: try it, return result
 - If tavily fails or unavailable: try serpapi
 - If both fail: return a helpful error message listing what's missing
 
 **`_search_tavily(query)`** using the Tavily client:
+
 ```python
 response = self.tavily_client.search(query=query, search_depth="basic",
                                      include_answer=True, max_results=3)
@@ -526,6 +543,7 @@ response = self.tavily_client.search(query=query, search_depth="basic",
 ```
 
 **`_search_serpapi(query)`** using SerpApi:
+
 ```python
 from serpapi import SerpApiClient
 params = {"engine": "google", "q": query, "api_key": self.serpapi_key}
@@ -611,13 +629,13 @@ print("All tool imports OK")
 
 ## ✅ Phase 2 Complete Checklist
 
-- [ ] `tools/base.py` — `ToolParameter` and abstract `Tool` with `run`, `get_parameters`, `validate_parameters`, `to_dict`
-- [ ] `tools/registry.py` — dual storage, `execute_tool` catches all errors, `get_tools_description`, `global_registry` singleton
-- [ ] `tools/chain.py` — `ToolChain` with template variable substitution, `ToolChainManager`
-- [ ] `tools/async_executor.py` — `ThreadPoolExecutor` bridge, parallel + batch execution, sync wrappers
-- [ ] `tools/builtin/calculator.py` — AST traversal, no `eval()`, all errors returned as strings
-- [ ] `tools/builtin/search.py` — availability check at `__init__`, hybrid fallback, helpful error messages
-- [ ] Both `__init__.py` files export everything
-- [ ] All self-checks pass
+- [x] `tools/base.py` — `ToolParameter` and abstract `Tool` with `run`, `get_parameters`, `validate_parameters`, `to_dict`
+- [x] `tools/registry.py` — dual storage, `execute_tool` catches all errors, `get_tools_description`, `global_registry` singleton
+- [x] `tools/chain.py` — `ToolChain` with template variable substitution, `ToolChainManager`
+- [x] `tools/async_executor.py` — `ThreadPoolExecutor` bridge, parallel + batch execution, sync wrappers
+- [x] `tools/builtin/calculator.py` — AST traversal, no `eval()`, all errors returned as strings
+- [x] `tools/builtin/search.py` — availability check at `__init__`, hybrid fallback, helpful error messages
+- [x] Both `__init__.py` files export everything
+- [x] All self-checks pass
 
 **Next → [Phase 3: Build the Agent Implementations](./phase3_agents.md)**

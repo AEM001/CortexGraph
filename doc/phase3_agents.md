@@ -24,6 +24,7 @@ Before writing any code, read the concept section for each agent. Understanding 
 ### Concept
 
 The simplest useful agent. It wraps an LLM call with two additions that make it far more useful than a raw API call:
+
 1. **A system prompt** — sets the LLM's persona and instructions for all turns
 2. **Conversation history** — every exchange is remembered, so the agent can refer back to earlier messages
 
@@ -205,7 +206,7 @@ def _parse_finish(self, action_text: str) -> str:
 ```python
 def run(self, input_text: str, **kwargs) -> str:
     self.current_history = []   # reset per-run state
-    
+
     for step in range(self.max_steps):
         # 1. Build prompt
         tools_desc = self.tool_registry.get_tools_description()
@@ -215,42 +216,42 @@ def run(self, input_text: str, **kwargs) -> str:
             question=input_text,
             history=history_str if history_str else "None yet."
         )
-        
+
         # 2. Call LLM (non-streaming — you need the full output to parse it)
         messages = [{"role": "user", "content": prompt}]
         response = self.llm.invoke(messages, **kwargs)
         if not response:
             break
-        
+
         # 3. Parse output
         thought, action = self._parse_output(response)
         if thought:
             print(f"Thought: {thought}")
         if not action:
             break
-        
+
         # 4. Check for Finish
         if action.startswith("Finish"):
             final_answer = self._parse_finish(action)
             self.add_message(Message(input_text, "user"))
             self.add_message(Message(final_answer, "assistant"))
             return final_answer
-        
+
         # 5. Execute tool
         tool_name, tool_input = self._parse_action(action)
         if not tool_name:
             self.current_history.append("Observation: Invalid action format.")
             continue
-        
+
         observation = self.tool_registry.execute_tool(tool_name, tool_input)
         print(f"Action: {action}")
         print(f"Observation: {observation}")
-        
+
         # 6. Update history for next iteration
         self.current_history.append(f"Thought: {thought}")
         self.current_history.append(f"Action: {action}")
         self.current_history.append(f"Observation: {observation}")
-    
+
     # Fallback if max_steps reached
     fallback = "I could not complete this task within the step limit."
     self.add_message(Message(input_text, "user"))
@@ -326,6 +327,7 @@ print(f"Result: {result}")
 LLMs can critique their own outputs. This agent exploits that ability by running a generate → critique → refine loop. It is particularly effective for tasks where quality matters over speed: writing, code generation, analysis reports.
 
 The loop:
+
 ```
 Initial attempt
      ↓
@@ -374,6 +376,7 @@ class Memory:
 Define these as a dict `DEFAULT_PROMPTS` at the module level:
 
 **`"initial"`** — generate the first attempt:
+
 ```
 Complete the following task thoroughly and accurately:
 
@@ -383,6 +386,7 @@ Provide a complete response:
 ```
 
 **`"reflect"`** — critique an attempt:
+
 ```
 Review the following response to a task and identify specific issues or areas for improvement.
 
@@ -396,6 +400,7 @@ Otherwise, list specific problems and concrete suggestions for improvement:
 ```
 
 **`"refine"`** — improve based on feedback:
+
 ```
 Improve the following response based on the critique provided.
 
@@ -417,25 +422,25 @@ Accept `custom_prompts: Optional[Dict[str, str]]` in the constructor to override
 ```python
 def run(self, input_text: str, **kwargs) -> str:
     self.memory = Memory()   # fresh memory each run
-    
+
     print(f"--- Initial Attempt ---")
     initial_prompt = self.prompts["initial"].format(task=input_text)
     initial_result = self._call_llm(initial_prompt, **kwargs)
     self.memory.add_record("execution", initial_result)
-    
+
     for i in range(self.max_iterations):
         print(f"--- Reflection {i+1}/{self.max_iterations} ---")
-        
+
         last = self.memory.get_last_execution()
         reflect_prompt = self.prompts["reflect"].format(task=input_text, content=last)
         feedback = self._call_llm(reflect_prompt, **kwargs)
         self.memory.add_record("reflection", feedback)
-        
+
         # Early stopping: LLM says no improvement needed
         if "no improvement needed" in feedback.lower():
             print("Agent satisfied. Stopping early.")
             break
-        
+
         print(f"--- Refinement {i+1} ---")
         refine_prompt = self.prompts["refine"].format(
             task=input_text,
@@ -444,7 +449,7 @@ def run(self, input_text: str, **kwargs) -> str:
         )
         refined = self._call_llm(refine_prompt, **kwargs)
         self.memory.add_record("execution", refined)
-    
+
     final = self.memory.get_last_execution()
     self.add_message(Message(input_text, "user"))
     self.add_message(Message(final, "assistant"))
@@ -493,6 +498,7 @@ This is most effective for: multi-step reasoning, research tasks, math word prob
 The planner's job: call the LLM with a planning prompt and parse the response as a Python list.
 
 **Planner prompt template (`DEFAULT_PLANNER_PROMPT`):**
+
 ```
 You are an expert task planner. Break the following problem into a clear, ordered list of simple, self-contained steps.
 Each step should be something that can be answered independently.
@@ -504,8 +510,8 @@ Output format:
 ```python
 ["Step 1 description", "Step 2 description", "Step 3 description"]
 ```
-```
 
+```
 **The `plan(question) -> list[str]` method:**
 
 ```python
@@ -513,7 +519,7 @@ def plan(self, question: str, **kwargs) -> list[str]:
     prompt = self.prompt_template.format(question=question)
     messages = [{"role": "user", "content": prompt}]
     response = self.llm_client.invoke(messages, **kwargs) or ""
-    
+
     try:
         # Extract the Python list from inside the ```python ... ``` block
         code_block = response.split("```python")[1].split("```")[0].strip()
@@ -531,6 +537,7 @@ def plan(self, question: str, **kwargs) -> list[str]:
 The executor's job: execute each step one at a time, accumulating results into a `history` string that gets injected into the next step's prompt.
 
 **Executor prompt template (`DEFAULT_EXECUTOR_PROMPT`):**
+
 ```
 You are an expert at executing plans step by step.
 You will be given the original problem, the full plan, what has been done so far, and your current step.
@@ -555,7 +562,7 @@ Your answer for this step only:
 def execute(self, question: str, plan: list[str], **kwargs) -> str:
     history = ""
     final_answer = ""
-    
+
     for i, step in enumerate(plan, 1):
         print(f"Executing step {i}/{len(plan)}: {step}")
         prompt = self.prompt_template.format(
@@ -566,11 +573,11 @@ def execute(self, question: str, plan: list[str], **kwargs) -> str:
         )
         messages = [{"role": "user", "content": prompt}]
         result = self.llm_client.invoke(messages, **kwargs) or ""
-        
+
         history += f"Step {i}: {step}\nResult: {result}\n\n"
         final_answer = result
         print(f"Step {i} result: {result[:100]}...")
-    
+
     return final_answer
 ```
 
@@ -595,16 +602,16 @@ class PlanAndSolveAgent(Agent):
     def run(self, input_text: str, **kwargs) -> str:
         print(f"Planning...")
         plan = self.planner.plan(input_text, **kwargs)
-        
+
         if not plan:
             answer = "Could not generate a valid plan for this task."
             self.add_message(Message(input_text, "user"))
             self.add_message(Message(answer, "assistant"))
             return answer
-        
+
         print(f"Plan generated ({len(plan)} steps). Executing...")
         final_answer = self.executor.execute(input_text, plan, **kwargs)
-        
+
         self.add_message(Message(input_text, "user"))
         self.add_message(Message(final_answer, "assistant"))
         return final_answer

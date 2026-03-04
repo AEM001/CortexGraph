@@ -423,12 +423,12 @@ print("All core imports OK")
 
 Run each check before moving to Phase 2:
 
-- [ ] `core/exceptions.py` — 5 exception classes, base catches all subtypes
-- [ ] `core/message.py` — Pydantic model, role validation, `to_dict()` strips timestamp/metadata
-- [ ] `core/config.py` — Pydantic model, `from_env()` reads 4 env vars
-- [ ] `core/llm.py` — auto-detects provider, resolves credentials, `invoke()` and `stream_invoke()` both work
-- [ ] `core/agent.py` — abstract `run()`, private history, `get_history()` returns copy
-- [ ] `core/__init__.py` — all 5 modules exported
-- [ ] All self-checks pass without errors
+- [x] `core/exceptions.py` — 5 exception classes, base catches all subtypes
+- [x] `core/message.py` — Pydantic model, role validation, `to_dict()` strips timestamp/metadata
+- [x] `core/config.py` — Pydantic model, `from_env()` reads 4 env vars
+- [x] `core/llm.py` — auto-detects provider, resolves credentials, `invoke()` and `stream_invoke()` both work
+- [x] `core/agent.py` — abstract `run()`, private history, `get_history()` returns copy
+- [x] `core/__init__.py` — all 5 modules exported
+- [x] All self-checks pass without errors
 
 **Next → [Phase 2: Build the Tools Layer](./phase2_tools.md)**
