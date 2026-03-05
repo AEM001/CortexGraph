@@ -322,8 +322,11 @@ Run a single tool asynchronously using `run_in_executor`. Catch all exceptions a
 **`async execute_tools_parallel(tasks: List[Dict[str, str]]) -> List[Dict[str, Any]]`**
 
 - `tasks` is a list of `{"tool_name": "...", "input_data": "..."}` dicts.
+
 - Create a coroutine for each task using `execute_tool_async`.
+
 - Await them and collect results.
+
 - Return a list of result dicts:
   
   ```python
